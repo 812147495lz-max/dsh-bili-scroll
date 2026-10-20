@@ -1,0 +1,79 @@
+name: Build and publish BiliPick (Windows)
+
+on:
+  push:
+    branches: [bilipick]
+    paths:
+      - ".github/workflows/release-windows.yml"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v0.1.1"
+        required: true
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bilipick-windows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build Windows x64 and publish GitHub Release
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: "x64"
+          cache: "pip"
+
+      - name: Install dependencies and test imports
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt "pyinstaller>=6,<7"
+          if ($LASTEXITCODE -ne 0) { throw "Dependency install failed" }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { throw "Dependency conflict" }
+          python -m py_compile app.py engine.py
+          if ($LASTEXITCODE -ne 0) { throw "Python syntax check failed" }
+          python -c "import app; import engine"
+          if ($LASTEXITCODE -ne 0) { throw "Python imports failed" }
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: |
+          python -m PyInstaller --noconfirm --clean --onefile --noconsole --name BiliPick --add-data "web;web" --collect-all bilibili_api --distpath dist --workpath build app.py
+          if ($LASTEXITCODE -ne 0 -or !(Test-Path "dist/BiliPick.exe")) { throw "EXE build failed" }
+
+      - name: Package and checksum
+        shell: pwsh
+        run: |
+          New-Item -Path package -ItemType Directory -Force | Out-Null
+          Copy-Item "dist/BiliPick.exe" "package/BiliPick.exe"
+          Copy-Item "README.md" "package/README.md"
+          Copy-Item "LICENSE" "package/LICENSE"
+          Compress-Archive -Path "package/*" -DestinationPath "BiliPick-win64.zip" -Force
+          $hash = (Get-FileHash "BiliPick-win64.zip" -Algorithm SHA256).Hash.ToLower()
+          "$hash  BiliPick-win64.zip" | Set-Content -Path "BiliPick-win64.zip.sha256" -Encoding ascii
+          if (!(Test-Path "BiliPick-win64.zip")) { throw "ZIP not created" }
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || 'v0.1.0' }}
+        run: |
+          gh release view "$env:RELEASE_TAG" --repo "$env:GH_REPO" *> $null
+          if ($LASTEXITCODE -eq 0) { throw "Release tag already exists: $env:RELEASE_TAG" }
+          gh release create "$env:RELEASE_TAG" "BiliPick-win64.zip" "BiliPick-win64.zip.sha256" --repo "$env:GH_REPO" --target "${{ github.sha }}" --title "BiliPick $env:RELEASE_TAG" --notes "Windows x64 免安装版。下载 ZIP，解压后运行 BiliPick.exe，在本地网页界面配置 API Key 并扫码登录 B站。发布包不包含个人配置或 B站登录数据。"
+          if ($LASTEXITCODE -ne 0) { throw "Release creation failed. Check Actions workflow permissions: Read and write permissions." }
