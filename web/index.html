@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BiliPick</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --line:#e5e7eb; --line2:#eef0f3;
+    --text:#111418; --dim:#6b7280; --muted:#9ca3af;
+    --blue:#2563eb; --blue-h:#1d4ed8; --green:#059669; --amber:#b45309; --red:#dc2626;
+    --radius:14px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:100vh}
+
+  /* sidebar */
+  aside{width:228px;flex:0 0 228px;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:20px 20px 14px}
+  .logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#22d3ee);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px}
+  .brand b{font-size:15px;letter-spacing:.2px}
+  nav{padding:6px 10px;display:flex;flex-direction:column;gap:2px}
+  nav a{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;color:#374151;
+    text-decoration:none;font-size:13.5px;cursor:pointer;border:1px solid transparent}
+  nav a:hover{background:#f3f4f6}
+  nav a.on{background:#eff4ff;color:var(--blue);font-weight:600;border-color:#dbe6ff}
+  nav .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.55}
+  .sidefoot{margin-top:auto;padding:14px 18px;border-top:1px solid var(--line2);font-size:12px;color:var(--muted)}
+  .sidefoot .st{display:flex;align-items:center;gap:7px;margin-bottom:6px;color:var(--dim)}
+  .pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;
+    font-size:11.5px;font-weight:600;border:1px solid var(--line);color:var(--dim);background:#fafafa}
+  .pill.ok{color:var(--green);background:#ecfdf5;border-color:#c7f0dd}
+  .pill.warn{color:var(--amber);background:#fffbeb;border-color:#fde68a}
+  .pill.live{color:var(--blue);background:#eff6ff;border-color:#dbe6ff}
+
+  /* main */
+  main{flex:1;min-width:0;padding:26px 34px 60px}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .top h1{font-size:21px;margin:0;font-weight:650;letter-spacing:-.2px}
+  .top .grow{flex:1}
+  .page{display:none}
+  .page.on{display:block;animation:fade .16s ease}
+  @keyframes fade{from{opacity:.4;transform:translateY(2px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px 22px;margin-bottom:18px}
+  .card h3{margin:0 0 16px;font-size:14px;font-weight:650;letter-spacing:.1px}
+  .card .sub{color:var(--dim);font-size:12.5px;margin:-8px 0 14px}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:980px){.g3,.g2{grid-template-columns:1fr}}
+  .stat{padding:18px 20px}
+  .stat .k{color:var(--dim);font-size:12px;margin-bottom:8px}
+  .stat .v{font-size:22px;font-weight:650;letter-spacing:-.3px}
+  .stat .v small{font-size:13px;color:var(--dim);font-weight:500}
+  .stat .m{margin-top:8px}
+
+  label{display:block;font-size:12.5px;color:var(--dim);margin:0 0 6px;font-weight:500}
+  input[type=text],input[type=password],input[type=number],select,textarea{
+    width:100%;background:#fff;color:var(--text);border:1px solid var(--line);border-radius:10px;
+    padding:9px 11px;font:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus,textarea:focus{border-color:#93b4fd;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  textarea{min-height:84px;resize:vertical}
+  .field{margin-bottom:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--text);
+    border-radius:10px;padding:9px 15px;transition:.15s}
+  button:hover{border-color:#c9cdd4;background:#fafafa}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  button.primary:hover{background:var(--blue-h);border-color:var(--blue-h)}
+  button.ghost{border-color:transparent;background:transparent;color:var(--dim)}
+  button.ghost:hover{background:#f3f4f6;color:var(--text)}
+  button.danger{color:var(--red);border-color:#f3d3d3;background:#fff}
+  button.danger:hover{background:#fef2f2}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .hstack{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .hstack .grow{flex:1}
+
+  table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  th{color:var(--dim);font-weight:500;font-size:12px;text-align:left;padding:0 8px 9px}
+  td{padding:6px 8px;border-top:1px solid var(--line2);vertical-align:middle}
+  td:first-child,th:first-child{padding-left:0}
+  td:last-child,th:last-child{padding-right:0}
+  td input{padding:7px 9px;border-radius:8px}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .total{color:var(--dim);font-size:12.5px;margin-top:12px}
+
+  .log{background:#0b0e14;color:#c8d1df;border-radius:12px;padding:14px 16px;height:360px;overflow:auto;
+    font:12px/1.6 "SFMono-Regular",Consolas,"Liberation Mono",monospace;white-space:pre-wrap;border:1px solid #1b2230}
+  .log .ok{color:#6ee7b7}.log .warn{color:#fcd34d}.log .err{color:#fca5a5}
+  pre.md{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;max-height:520px;
+    overflow:auto;white-space:pre-wrap;font:13px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:14px 0 0}
+  .qrbox{position:fixed;inset:0;background:rgba(17,20,24,.45);display:none;align-items:center;justify-content:center;z-index:50}
+  .qrbox.on{display:flex}
+  .qrbox .inner{background:#fff;border-radius:18px;padding:26px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .qrbox img{width:240px;height:240px;display:none;border-radius:10px}
+  .qrbox .st{margin-top:12px;color:var(--dim);font-size:13px;min-height:20px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#111418;color:#fff;
+    padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:80}
+  .toast.on{opacity:1}
+  .divider{height:1px;background:var(--line2);margin:16px 0}
+  .empty{color:var(--muted);font-size:13px;padding:8px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><div class="logo">B</div><b>BiliPick</b></div>
+    <nav id="nav">
+      <a data-p="dashboard" class="on"><span class="dot"></span>总览</a>
+      <a data-p="categories"><span class="dot"></span>类别与配额</a>
+      <a data-p="api"><span class="dot"></span>API 与模型</a>
+      <a data-p="run"><span class="dot"></span>运行</a>
+      <a data-p="reports"><span class="dot"></span>日报</a>
+      <a data-p="advanced"><span class="dot"></span>高级</a>
+    </nav>
+    <div class="sidefoot">
+      <div class="st"><span id="pill-login" class="pill">B站</span></div>
+      <div class="st"><span id="pill-key" class="pill">API</span></div>
+      <div id="side-note">—</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="top">
+      <h1 id="title">总览</h1>
+      <div class="grow"></div>
+      <button id="btn-save" class="ghost" onclick="saveCfg()">保存</button>
+      <button id="btn-run" class="primary" onclick="runNow()">开始跑一轮</button>
+    </div>
+
+    <!-- 总览 -->
+    <section class="page on" id="page-dashboard">
+      <div class="grid g3">
+        <div class="card stat"><div class="k">B站 账号</div><div class="v" id="s-who">未登录</div>
+          <div class="m"><button class="ghost" onclick="openLogin()">扫码登录</button></div></div>
+        <div class="card stat"><div class="k">模型</div><div class="v" id="s-model">—</div>
+          <div class="m" id="s-provider" style="color:var(--dim);font-size:12px">—</div></div>
+        <div class="card stat"><div class="k">今日花费</div><div class="v" id="s-cost">¥0.000</div>
+          <div class="m" id="s-last" style="color:var(--dim);font-size:12px">还没跑过</div></div>
+      </div>
+      <div class="card">
+        <h3>最近一轮</h3>
+        <div id="last-run" class="empty">还没有运行记录</div>
+      </div>
+    </section>
+
+    <!-- 类别与配额 -->
+    <section class="page" id="page-categories">
+      <div class="card">
+        <div class="hstack" style="margin-bottom:14px">
+          <h3 style="margin:0">类别</h3><div class="grow"></div>
+          <button class="ghost" onclick="addCat()">添加类别</button>
+        </div>
+        <table>
+          <thead><tr><th style="width:110px">名称</th><th>关键词</th><th style="width:86px">每天条数</th>
+            <th style="width:86px">精判上限</th><th style="width:96px">质量分下限</th><th style="width:88px">评分下限</th><th style="width:60px"></th></tr></thead>
+          <tbody id="cats"></tbody>
+        </table>
+        <div class="total" id="total"></div>
+      </div>
+    </section>
+
+    <!-- API -->
+    <section class="page" id="page-api">
+      <div class="card">
+        <h3>接口</h3>
+        <div class="grid g2">
+          <div class="field"><label>协议</label>
+            <select id="provider" onchange="providerChanged()">
+              <option value="openai">OpenAI 兼容</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="gemini">Gemini</option>
+              <option value="jsonl">自定义 JSONL</option>
+            </select></div>
+          <div class="field"><label>API Key</label><input id="api_key" type="password" autocomplete="off"></div>
+          <div class="field"><label>Base URL</label><input id="api_base" type="text"></div>
+          <div class="field"><label>模型</label><input id="model" type="text" list="model-list">
+            <datalist id="model-list"></datalist></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 运行 -->
+    <section class="page" id="page-run">
+      <div class="card">
+        <div class="hstack" style="margin-bottom:12px">
+          <h3 style="margin:0">日志</h3><div class="grow"></div>
+          <span id="run-state" class="pill">空闲</span>
+          <button class="ghost" onclick="clearLog()">清屏</button>
+        </div>
+        <div id="log" class="log"></div>
+      </div>
+    </section>
+
+    <!-- 日报 -->
+    <section class="page" id="page-reports">
+      <div class="card">
+        <div class="hstack">
+          <select id="reports" style="max-width:240px"><option value="">选择日期</option></select>
+          <button onclick="loadReport()">查看</button>
+          <div class="grow"></div>
+          <span id="cost" class="pill">¥0.000</span>
+        </div>
+        <pre id="report" class="md" style="display:none"></pre>
+      </div>
+    </section>
+
+    <!-- 高级 -->
+    <section class="page" id="page-advanced">
+      <div class="card">
+        <h3>预算与节奏</h3>
+        <div class="grid g3">
+          <div class="field"><label>每日预算（元）</label><input id="budget_cny" type="number" step="0.1" min="0.1"></div>
+          <div class="field"><label>单次时间上限（分钟）</label><input id="max_minutes" type="number" step="1" min="1"></div>
+          <div class="field"><label>最近几天</label><input id="days_back" type="number" step="1" min="1"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>筛选</h3>
+        <div class="grid g2">
+          <div class="field"><label>播放下限</label><input id="min_play" type="number" step="100" min="0"></div>
+          <div class="field"><label>跳过已关注的人</label>
+            <select id="skip_followed"><option value="true">是</option><option value="false">否</option></select></div>
+          <div class="field"><label>观看历史翻页</label><input id="history_pages" type="number" step="1" min="1"></div>
+          <div class="field"><label>全局评分下限</label><input id="min_final_score" type="number" step="0.1" min="0"></div>
+          <div class="field"><label>排除关键词</label><textarea id="exclude_keywords"></textarea></div>
+          <div class="field"><label>兴趣描述</label><textarea id="interests"></textarea></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>判定细节</h3>
+        <div class="grid g3">
+          <div class="field"><label>每条字幕字数</label><input id="subtitle_chars" type="number" step="500" min="500"></div>
+          <div class="field"><label>每条评论数</label><input id="comments_per_video" type="number" step="5" min="0"></div>
+          <div class="field"><label>每天定时</label>
+            <div class="hstack"><select id="sched_enabled"><option value="true">开</option><option value="false">关</option></select>
+            <input id="sched_time" type="text" placeholder="12:40" style="width:100px"></div></div>
+          <div class="field"><label>开机自启</label>
+            <select id="autostart" onchange="toggleAutostart()"><option value="false">关</option><option value="true">开</option></select></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="qrbox" id="qrbox">
+  <div class="inner">
+    <div style="font-weight:650;margin-bottom:14px">B站 扫码登录</div>
+    <img id="qr" alt="">
+    <div class="st" id="qr-st">正在获取二维码…</div>
+    <div style="margin-top:16px"><button class="ghost" onclick="closeLogin()">关闭</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN="__BILIPICK_TOKEN__";
+const $=(id)=>document.getElementById(id);
+let CFG=null,LOGN=0,POLLING=null;
+
+const PROVIDERS={
+  openai:{base:"https://api.deepseek.com",model:"deepseek-flash",models:["deepseek-flash","deepseek-v4-pro"]},
+  anthropic:{base:"https://api.anthropic.com",model:"claude-sonnet-4-5",models:["claude-sonnet-4-5","claude-opus-4-1","claude-haiku-4-5"]},
+  gemini:{base:"https://generativelanguage.googleapis.com",model:"gemini-2.5-pro",models:["gemini-2.5-pro","gemini-2.5-flash"]},
+  jsonl:{base:"",model:"",models:[]}
+};
+
+async function api(path,opt){
+  opt=opt||{};
+  opt.headers=Object.assign({"X-Token":TOKEN,"Content-Type":"application/json"},opt.headers||{});
+  const r=await fetch(path,opt);
+  return await r.json();
+}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1800);}
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
+function csvArr(a){return (a||[]).join("，");}
+function arrCsv(s){return (s||"").split(/[,，\n]/).map(x=>x.trim()).filter(Boolean);}
+function money(n){return "¥"+(Math.round((n||0)*1000)/1000).toFixed(3);}
+
+/* ---- navigation ---- */
+document.querySelectorAll("#nav a").forEach(a=>a.onclick=()=>{
+  document.querySelectorAll("#nav a").forEach(x=>x.classList.remove("on"));
+  a.classList.add("on");
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
+  $("page-"+a.dataset.p).classList.add("on");
+  $("title").textContent=a.textContent.trim();
+  if(a.dataset.p==="reports") loadReports();
+});
+
+/* ---- boot ---- */
+async function boot(){
+  const s=await api("/api/state"); CFG=s.config;
+  $("provider").value=CFG.provider||"openai";
+  $("api_base").value=CFG.api_base||"";
+  $("model").value=CFG.model||"";
+  $("api_key").value="";
+  $("api_key").placeholder=CFG.api_key_set?"已保存（留空不修改）":"sk-...";
+  $("budget_cny").value=CFG.budget_cny;
+  $("max_minutes").value=CFG.max_minutes;
+  $("days_back").value=CFG.days_back;
+  $("min_play").value=CFG.min_play;
+  $("history_pages").value=CFG.history_pages;
+  $("skip_followed").value=String(!!CFG.skip_followed);
+  $("subtitle_chars").value=CFG.subtitle_chars;
+  $("comments_per_video").value=CFG.comments_per_video;
+  $("min_final_score").value=CFG.min_final_score;
+  $("exclude_keywords").value=csvArr(CFG.exclude_keywords);
+  $("interests").value=CFG.interests||"";
+  const sch=CFG.schedule||{};
+  $("sched_enabled").value=String(!!sch.enabled);
+  $("sched_time").value=sch.time||"12:40";
+  const a=await api("/api/autostart");
+  if(a.ok) $("autostart").value=String(!!a.enabled);
+  providerChanged(true);
+  renderCats();
+  renderStatus(s);
+  refreshWho();
+  refreshCost();
+  setInterval(pollLog,1500);
+  setInterval(refreshCost,20000);
+}
+
+function providerChanged(init){
+  const p=$("provider").value, d=PROVIDERS[p];
+  $("model-list").innerHTML=d.models.map(m=>`<option value="${m}">`).join("");
+  if(!init||!$("api_base").value) $("api_base").value=d.base;
+  if(!init||!$("model").value) $("model").value="";
+  $("model").placeholder=d.model||"模型名";
+}
+
+function renderStatus(s){
+  const c=s.config;
+  $("pill-key").className="pill "+(c.api_key_set?"ok":"warn");
+  $("pill-key").textContent=c.api_key_set?"API 已配置":"API 未配置";
+  $("s-model").textContent=c.model|| (PROVIDERS[c.provider||"openai"].model||"—");
+  $("s-provider").textContent=({openai:"OpenAI 兼容",anthropic:"Anthropic",gemini:"Gemini",jsonl:"自定义 JSONL"})[c.provider||"openai"];
+  $("side-note").textContent="每天 "+(c.categories||[]).reduce((a,x)=>a+(+x.quota||0),0)+" 条";
+  const last=s.state.last;
+  if(last&&last.ok){
+    if(last.skipped){
+      $("s-last").textContent="今天已挑够";
+      $("last-run").innerHTML="今天已经挑够，<b>明天再跑</b>（或去「类别与配额」调大条数）";
+    }else{
+      $("s-last").textContent="上次 "+last.picked+" 条 · "+money(last.cost);
+      $("last-run").innerHTML=`挑中 <b>${last.picked}</b> 条，加入稍后再看 <b>${last.added}</b> 条，花费 <b>${money(last.cost)}</b>`;
+    }
+  }else if(last&&!last.ok){
+    $("s-last").textContent="上次失败";
+    $("last-run").textContent="失败："+(last.error||"");
+  }
+  if(s.state.running) setRunning(true);
+}
+
+async function refreshWho(){
+  const r=await api("/api/whoami");
+  if(r.logged_in){
+    $("pill-login").className="pill ok";$("pill-login").textContent="B站 已登录";
+    $("s-who").textContent=r.name||"已登录";
+  }else{
+    $("pill-login").className="pill warn";$("pill-login").textContent="B站 未登录";
+    $("s-who").textContent="未登录";
+  }
+}
+async function toggleAutostart(){
+  const want=$("autostart").value==="true";
+  const r=await api("/api/autostart",{method:"POST",body:JSON.stringify({enabled:want})});
+  if(r.ok){
+    $("autostart").value=String(!!r.enabled);
+    if(r.applied) toast(want?"已开启开机自启":"已关闭开机自启");
+    else toast("自动设置失败：请双击 App 目录里的 "+(want?"enable":"disable")+"-autostart.cmd");
+  }else toast(r.error||"设置失败");
+}
+async function refreshCost(){
+  const c=await api("/api/cost");
+  if(c.ok){$("s-cost").textContent=money(c.today);$("cost").textContent="今日 "+money(c.today);}
+}
+
+/* ---- categories ---- */
+function renderCats(){
+  const tb=$("cats");tb.innerHTML="";
+  CFG.categories.forEach((c,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><input data-i="${i}" data-k="label" value="${esc(c.label)}"></td>
+      <td><input data-i="${i}" data-k="keywords" value="${esc(csvArr(c.keywords))}"></td>
+      <td><input class="num" data-i="${i}" data-k="quota" type="number" min="0" value="${c.quota}"></td>
+      <td><input class="num" data-i="${i}" data-k="deep" type="number" min="1" value="${c.deep}"></td>
+      <td><input class="num" data-i="${i}" data-k="min_quality" type="number" step="0.5" value="${c.min_quality}"></td>
+      <td><input class="num" data-i="${i}" data-k="min_score" type="number" step="0.1" value="${c.min_score??CFG.min_final_score}"></td>
+      <td><button class="ghost danger" onclick="delCat(${i})">删除</button></td>`;
+    tb.appendChild(tr);
+  });
+  renderTotal();
+}
+function renderTotal(){
+  const t=CFG.categories.reduce((a,c)=>a+(+c.quota||0),0);
+  $("total").textContent="每天共 "+t+" 条";
+  $("side-note").textContent="每天 "+t+" 条";
+}
+$("cats").addEventListener("input",e=>{
+  const t=e.target;if(!t.dataset||t.dataset.i===undefined)return;
+  const c=CFG.categories[+t.dataset.i];if(!c)return;
+  const k=t.dataset.k;
+  c[k]=k==="label"?t.value:(k==="keywords"?arrCsv(t.value):(+t.value||0));
+  if(k==="keywords"&&(!c.match||!c.match.length))c.match=c.keywords.slice();
+  if(k==="quota")renderTotal();
+});
+function addCat(){
+  CFG.categories.push({id:"cat"+Date.now(),label:"新类别",quota:5,deep:20,candidates:150,
+    min_quality:10,min_score:+CFG.min_final_score||6,keywords:["关键词"],match:[]});
+  renderCats();
+}
+function delCat(i){if(CFG.categories.length<=1)return;CFG.categories.splice(i,1);renderCats();}
+
+/* ---- save ---- */
+async function saveCfg(){
+  const cfg={
+    provider:$("provider").value,
+    api_base:$("api_base").value.trim(),
+    model:$("model").value.trim(),
+    budget_cny:+$("budget_cny").value||3,
+    max_minutes:+$("max_minutes").value||10,
+    days_back:+$("days_back").value||10,
+    min_play:+$("min_play").value||0,
+    history_pages:+$("history_pages").value||5,
+    skip_followed:$("skip_followed").value==="true",
+    subtitle_chars:+$("subtitle_chars").value||8000,
+    comments_per_video:+$("comments_per_video").value||30,
+    min_final_score:+$("min_final_score").value||6,
+    exclude_keywords:arrCsv($("exclude_keywords").value),
+    interests:$("interests").value,
+    categories:CFG.categories.map(c=>({id:c.id,label:c.label,quota:+c.quota||0,deep:+c.deep||20,
+      candidates:+c.candidates||150,min_quality:+c.min_quality||0,min_score:+c.min_score||+$("min_final_score").value,
+      keywords:c.keywords||[],match:(c.match&&c.match.length?c.match:c.keywords)||[]})),
+    schedule:{enabled:$("sched_enabled").value==="true",time:$("sched_time").value.trim()}
+  };
+  const key=$("api_key").value.trim();
+  if(key)cfg.api_key=key;
+  const r=await api("/api/config",{method:"POST",body:JSON.stringify({config:cfg})});
+  if(r.ok){toast("已保存");$("api_key").value="";boot();}else toast(r.error||"保存失败");
+}
+
+/* ---- login ---- */
+function openLogin(){$("qrbox").classList.add("on");loginStart();}
+function closeLogin(){$("qrbox").classList.remove("on");}
+async function loginStart(){
+  const r=await api("/api/login/start",{method:"POST",body:"{}"});
+  if(!r.ok){$("qr-st").textContent=r.error||"出码失败";return;}
+  $("qr").src=r.png;$("qr").style.display="block";$("qr-st").textContent="请用 B站 App 扫码";
+  pollLogin();
+}
+async function pollLogin(){
+  for(let i=0;i<80;i++){
+    await new Promise(r=>setTimeout(r,2500));
+    const r=await api("/api/login/poll",{method:"POST",body:"{}"});
+    if(r.state==="ok"){$("qr-st").textContent="已登录";$("qr").style.display="none";refreshWho();return;}
+    if(r.state==="scanned"||r.state==="confirm"){$("qr-st").textContent="已扫码，请在手机上确认";}
+    if(r.state==="expired"){$("qr-st").textContent="二维码过期，请重新扫码";return;}
+  }
+}
+
+/* ---- run ---- */
+async function runNow(){
+  const r=await api("/api/run",{method:"POST",body:"{}"});
+  if(!r.ok){toast(r.error||"启动失败");return;}
+  setRunning(true);toast("已开始");
+  if(POLLING)clearInterval(POLLING);
+  POLLING=setInterval(async()=>{
+    const s=await api("/api/state");
+    if(!s.state.running){
+      clearInterval(POLLING);POLLING=null;setRunning(false);
+      const last=s.state.last||{};
+      if(last.ok){toast("完成：挑 "+last.picked+" 条 · "+money(last.cost));}
+      else toast(last.error||"失败");
+      renderStatus(s);refreshCost();
+    }
+  },3000);
+}
+function setRunning(on){
+  $("btn-run").disabled=on;
+  $("run-state").className="pill "+(on?"live":"");
+  $("run-state").textContent=on?"运行中":"空闲";
+}
+
+/* ---- log / reports ---- */
+async function pollLog(){
+  const r=await api("/api/log?since="+LOGN);
+  if(r.ok&&r.lines.length){
+    LOGN=r.next;
+    const el=$("log");
+    el.innerHTML+=r.lines.map(l=>`<div class="${/失败|错误|Error|error/.test(l)?"err":/完成|已登录|OK/.test(l)?"ok":""}">${esc(l)}</div>`).join("");
+    el.scrollTop=el.scrollHeight;
+  }
+}
+function clearLog(){$("log").innerHTML="";}
+async function loadReports(){
+  const r=await api("/api/reports");
+  if(!r.ok)return;
+  $("reports").innerHTML='<option value="">选择日期</option>'+r.files.map(f=>`<option>${f.replace(".md","")}</option>`).join("");
+  refreshCost();
+}
+async function loadReport(){
+  const day=$("reports").value;if(!day)return;
+  const r=await api("/api/report?day="+encodeURIComponent(day));
+  const el=$("report");el.style.display="block";
+  el.textContent=r.ok?r.text:(r.error||"读取失败");
+}
+
+boot();
+</script>
+</body>
+</html>

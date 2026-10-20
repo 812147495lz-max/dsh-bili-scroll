@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 c1overzz
+Copyright (c) 2026 BiliPick contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Attribution / 上游致谢：
+
+- 产品思路与「值班章程」设计来自 c1overzz/dsh-bili-scroll（MIT）
+- B站 接口能力来自 bilibili-api-python（MIT）与 adoresever/bilibili-mcp（MIT）
+- 本项目为独立重写实现，与上述项目无隶属关系。

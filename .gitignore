@@ -1,13 +1,22 @@
-# 这个插件包自己的 git 仓库 —— 只装插件本体，别装用户数据
-node_modules/
-.venv/
-*.log
-*.bak*
+# 运行数据（含 API key、B站 凭证，绝对不要提交）
 data/
-credential*.json
-seen_bvids.json
-out/
-log/
+*.zip
 
-# 给你本机双击用的脚本（里面有本机绝对路径），不进仓库
-*.cmd
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 构建产物
+dist/
+dist-*/
+build/
+build-*/
+*.spec
+
+# 本机相关
+python-path.txt
+enable-autostart.cmd
+disable-autostart.cmd
+dbg-*.txt
+logs/
